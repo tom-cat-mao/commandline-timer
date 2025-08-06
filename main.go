@@ -126,7 +126,11 @@ func drawTimer(timer *Timer) {
 	setColor("white")
 	setColor("bold")
 	for i, line := range largeText {
-		moveCursorTo(startY+i, centerX-len(line)/2)
+		// Calculate the actual width of the line (including Unicode characters)
+		lineWidth := runewidth.StringWidth(line)
+		// Center the line properly by positioning the start column
+		startCol := centerX - lineWidth/2
+		moveCursorTo(startY+i, startCol)
 		fmt.Print(line)
 	}
 	
@@ -273,7 +277,11 @@ func flashZero(keyChan chan byte) {
 		
 		// Draw large 00:00
 		for j, line := range largeZero {
-			moveCursorTo(startY+j, centerX-len(line)/2)
+			// Calculate the actual width of the line (including Unicode characters)
+			lineWidth := runewidth.StringWidth(line)
+			// Center the line properly by positioning the start column
+			startCol := centerX - lineWidth/2
+			moveCursorTo(startY+j, startCol)
 			fmt.Print(line)
 		}
 		
