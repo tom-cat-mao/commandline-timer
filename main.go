@@ -140,6 +140,7 @@ func drawTimer(timer *Timer) {
 	os.Stdout.Sync()
 }
 
+
 func createLargeText(text string) []string {
 	// Clean, readable digital font
 	font := map[rune][]string{
