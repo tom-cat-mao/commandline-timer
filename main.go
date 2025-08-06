@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -123,26 +122,17 @@ func drawTimer(timer *Timer) {
 	textLines := len(largeText)
 	startY := centerY - textLines/2
 	
-	// Draw large timer with digital clock style
-	setColor("green")
+	// Draw large timer with clean white text
+	setColor("white")
 	setColor("bold")
 	for i, line := range largeText {
 		moveCursorTo(startY+i, centerX-len(line)/2)
 		fmt.Print(line)
 	}
 	
-	// Add subtle shadow effect for depth
-	setColor("reset")
-	for i, line := range largeText {
-		moveCursorTo(startY+i+1, centerX-len(line)/2+1)
-		setColor("dark")
-		fmt.Print(strings.ReplaceAll(line, "█", "░"))
-	}
-	
 	// Draw small instructions at bottom
 	moveCursorTo(height-1, 0)
 	setColor("reset")
-	setColor("cyan")
 	fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
 	
 	// Reset colors
@@ -151,84 +141,84 @@ func drawTimer(timer *Timer) {
 }
 
 func createLargeText(text string) []string {
-	// Digital clock style font (7-segment display style)
+	// Clean, readable digital font
 	font := map[rune][]string{
 		'0': {
-			" █████ ",
-			"█     █",
-			"█     █",
-			"█     █",
-			" █████ ",
+			"█████",
+			"█   █",
+			"█   █",
+			"█   █",
+			"█████",
 		},
 		'1': {
-			"    █  ",
-			"    █  ",
-			"    █  ",
-			"    █  ",
-			"    █  ",
+			"    █",
+			"    █",
+			"    █",
+			"    █",
+			"    █",
 		},
 		'2': {
-			" █████ ",
-			"     █ ",
-			" █████ ",
-			"█      ",
-			" █████ ",
+			"█████",
+			"    █",
+			"█████",
+			"█    ",
+			"█████",
 		},
 		'3': {
-			" █████ ",
-			"     █ ",
-			" █████ ",
-			"     █ ",
-			" █████ ",
+			"█████",
+			"    █",
+			"█████",
+			"    █",
+			"█████",
 		},
 		'4': {
-			"█     █",
-			"█     █",
-			" █████ ",
-			"     █ ",
-			"     █ ",
+			"█   █",
+			"█   █",
+			"█████",
+			"    █",
+			"    █",
 		},
 		'5': {
-			" █████ ",
-			"█      ",
-			" █████ ",
-			"     █ ",
-			" █████ ",
+			"█████",
+			"█    ",
+			"█████",
+			"    █",
+			"█████",
 		},
 		'6': {
-			" █████ ",
-			"█      ",
-			" █████ ",
-			"█     █",
-			" █████ ",
+			"█████",
+			"█    ",
+			"█████",
+			"█   █",
+			"█████",
 		},
 		'7': {
-			" █████ ",
-			"     █ ",
-			"    █  ",
-			"   █   ",
-			"  █    ",
+			"█████",
+			"    █",
+			"    █",
+			"    █",
+			"    █",
 		},
 		'8': {
-			" █████ ",
-			"█     █",
-			" █████ ",
-			"█     █",
-			" █████ ",
+			"█████",
+			"█   █",
+			"█████",
+			"█   █",
+			"█████",
 		},
 		'9': {
-			" █████ ",
-			"█     █",
-			" █████ ",
-			"     █ ",
-			" █████ ",
+			"█████",
+			"█   █",
+			"█████",
+			"    █",
+			"█████",
 		},
 		':': {
-			"   ",
-			" █ ",
-			"   ",
-			" █ ",
-			"   ",
+			" ",
+			"█",
+			" ",
+			"█",
+			" ",
 		},
 	}
 	
@@ -240,7 +230,7 @@ func createLargeText(text string) []string {
 			if charLines, exists := font[char]; exists {
 				line += charLines[row] + " "
 			} else {
-				line += "       " // Space for unknown characters
+				line += "      " // Space for unknown characters
 			}
 		}
 		result = append(result, line)
@@ -270,13 +260,12 @@ func flashZero(keyChan chan byte) {
 		}
 		
 		if i%2 == 0 {
-			// Flash on - red color
-			setColor("red")
+			// Flash on - bold white
+			setColor("white")
 			setColor("bold")
 		} else {
-			// Flash off - normal green
-			setColor("green")
-			setColor("bold")
+			// Flash off - dim white
+			setColor("white")
 		}
 		
 		clearScreen()
@@ -290,7 +279,6 @@ func flashZero(keyChan chan byte) {
 		// Draw instructions
 		moveCursorTo(height-1, 0)
 		setColor("reset")
-		setColor("cyan")
 		fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
 		
 		os.Stdout.Sync()
