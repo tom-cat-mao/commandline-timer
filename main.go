@@ -255,7 +255,8 @@ func flashZero(keyChan chan byte) {
 	textLines := len(largeZero)
 	startY := centerY - textLines/2
 	
-	for i := 0; i < 25; i++ { // 5 seconds at 200ms intervals
+	// Flash for 5 seconds (25 intervals of 200ms)
+	for i := 0; i < 25; i++ {
 		select {
 		case key := <-keyChan:
 			if key == 13 || key == 10 { // Enter key (CR or LF)
@@ -265,28 +266,27 @@ func flashZero(keyChan chan byte) {
 			// Continue with flashing
 		}
 		
-		if i%2 == 0 {
-			// Flash on - bold white
-			setColor("white")
-			setColor("bold")
-		} else {
-			// Flash off - dim white
-			setColor("white")
-		}
-		
 		clearScreen()
 		
-		// Draw large 00:00
-		for j, line := range largeZero {
-			// Calculate the actual width of the line (including Unicode characters)
-			lineWidth := runewidth.StringWidth(line)
-			// Center the line properly by positioning the start column
-			startCol := centerX - lineWidth/2
-			moveCursorTo(startY+j, startCol)
-			fmt.Print(line)
+		// Only draw the text when it should be visible (on even intervals)
+		if i%2 == 0 {
+			// Flash on - bright bold white
+			setColor("white")
+			setColor("bold")
+			
+			// Draw large 00:00:00
+			for j, line := range largeZero {
+				// Calculate the actual width of the line (including Unicode characters)
+				lineWidth := runewidth.StringWidth(line)
+				// Center the line properly by positioning the start column
+				startCol := centerX - lineWidth/2
+				moveCursorTo(startY+j, startCol)
+				fmt.Print(line)
+			}
 		}
+		// When i%2 == 1, we don't draw anything - this creates the blink effect
 		
-		// Draw instructions
+		// Always draw instructions
 		moveCursorTo(height-1, 0)
 		setColor("reset")
 		fmt.Print(centerText("Press Enter to stop flashing or Ctrl+C to exit", width))
@@ -295,7 +295,9 @@ func flashZero(keyChan chan byte) {
 		time.Sleep(200 * time.Millisecond)
 	}
 	
+	// Final clear and reset
 	setColor("reset")
+	clearScreen()
 }
 
 func run() error {
