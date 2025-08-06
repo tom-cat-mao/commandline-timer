@@ -2,6 +2,8 @@ package display
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/tomcat/commandline-timer/pkg/timer"
@@ -102,6 +104,7 @@ func (d *Display) FlashZero(keyChan chan byte) {
 			}
 		}
 		// When i%2 == 1, we don't draw anything - this creates the blink effect
+		// The screen is already cleared, so nothing will be visible
 		
 		// Always draw instructions
 		d.terminal.MoveCursorTo(height-1, 0)
@@ -109,11 +112,14 @@ func (d *Display) FlashZero(keyChan chan byte) {
 		fmt.Print(d.terminal.CenterText("Press Enter to stop flashing or Ctrl+C to exit", width))
 		
 		d.terminal.Flush()
+		os.Stdout.Sync()
+		time.Sleep(200 * time.Millisecond)
 	}
 	
-	// Final clear and reset
+	// Final reset (don't clear screen to allow Time's up! message to show)
 	d.terminal.SetColor("reset")
-	d.terminal.ClearScreen()
+	// Move cursor to bottom to make room for Time's up! message
+	d.terminal.MoveCursorTo(height-2, 0)
 }
 
 func (d *Display) Flush() {

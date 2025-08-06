@@ -91,5 +91,5 @@ func (t *Terminal) CenterText(text string, width int) string {
 
 func (t *Terminal) Flush() {
 	// Ensure all output is written to the terminal
-	// This is a placeholder for any necessary flushing operations
+	os.Stdout.Sync()
 }
