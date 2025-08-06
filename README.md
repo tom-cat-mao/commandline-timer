@@ -25,7 +25,7 @@ sudo make install  # Optional
 ### Manual Build
 
 ```bash
-go build -o timer ./main.go
+go build -o timer ./cmd/timer/main.go
 chmod +x timer
 cp timer /usr/local/bin/  # Optional
 ```

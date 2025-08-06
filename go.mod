@@ -1,4 +1,4 @@
-module commandline-timer
+module github.com/tomcat/commandline-timer
 
 go 1.21
 
