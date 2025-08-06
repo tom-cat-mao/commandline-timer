@@ -105,75 +105,193 @@ func drawTimer(timer *Timer) {
 	width, height := getTerminalSize()
 	
 	remaining := timer.Remaining()
-	seconds := int(remaining.Seconds())
-	minutes := seconds / 60
-	seconds = seconds % 60
-	hours := minutes / 60
-	minutes = minutes % 60
-	
-	timerText := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	totalSeconds := int(remaining.Seconds())
 	
 	// Calculate positions
 	centerY := height / 2
-	titleY := centerY - 2
-	timerY := centerY
-	progressY := centerY + 2
-	instructionsY := height - 2
+	centerX := width / 2
 	
-	// Draw title
-	moveCursorTo(titleY, 0)
-	setColor("cyan")
-	setColor("bold")
-	fmt.Print(centerText("COUNTDOWN TIMER", width))
-	
-	// Draw timer
-	moveCursorTo(timerY, 0)
-	setColor("white")
-	setColor("bold")
-	fmt.Print(centerText(timerText, width))
-	
-	// Draw progress bar
-	progress := 1.0 - float64(remaining.Nanoseconds())/float64(timer.duration.Nanoseconds())
-	barWidth := width / 2
-	barX := (width - barWidth) / 2
-	
-	moveCursorTo(progressY, barX)
-	setColor("green")
-	
-	for i := 0; i < barWidth; i++ {
-		if float64(i) < float64(barWidth)*progress {
-			fmt.Print("=")
-		} else {
-			setColor("reset")
-			fmt.Print("-")
-			setColor("green")
-		}
+	// Format time based on duration
+	var timerText string
+	if timer.duration >= time.Hour {
+		hours := totalSeconds / 3600
+		minutes := (totalSeconds % 3600) / 60
+		seconds := totalSeconds % 60
+		timerText = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+	} else if timer.duration >= time.Minute {
+		minutes := totalSeconds / 60
+		seconds := totalSeconds % 60
+		timerText = fmt.Sprintf("%02d:%02d", minutes, seconds)
+	} else {
+		timerText = fmt.Sprintf("%d", totalSeconds)
 	}
 	
-	// Draw instructions
-	moveCursorTo(instructionsY, 0)
-	setColor("yellow")
-	fmt.Print(centerText("Press Ctrl+C to exit", width))
+	// Create large text representation
+	largeText := createLargeText(timerText)
+	textLines := len(largeText)
+	startY := centerY - textLines/2
 	
-	// Reset colors and move cursor to bottom
+	// Draw large timer
+	setColor("white")
+	setColor("bold")
+	for i, line := range largeText {
+		moveCursorTo(startY+i, centerX-len(line)/2)
+		fmt.Print(line)
+	}
+	
+	// Draw small instructions at bottom
+	moveCursorTo(height-1, 0)
 	setColor("reset")
-	moveCursorTo(height, 0)
+	setColor("cyan")
+	fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
 	
+	// Reset colors
+	setColor("reset")
 	os.Stdout.Sync()
 }
 
-func flashScreen() {
-	for i := 0; i < 3; i++ {
-		setColor("bg_red")
-		clearScreen()
-		os.Stdout.Sync()
-		time.Sleep(200 * time.Millisecond)
+func createLargeText(text string) []string {
+	// Large digit font (3x5 for numbers, 1x5 for colon)
+	font := map[rune][]string{
+		'0': {
+			"███",
+			"█ █",
+			"███",
+			"█ █",
+			"███",
+		},
+		'1': {
+			"██ ",
+			" █ ",
+			" █ ",
+			" █ ",
+			"███",
+		},
+		'2': {
+			"███",
+			"  █",
+			"███",
+			"█  ",
+			"███",
+		},
+		'3': {
+			"███",
+			"  █",
+			"███",
+			"  █",
+			"███",
+		},
+		'4': {
+			"█ █",
+			"█ █",
+			"███",
+			"  █",
+			"  █",
+		},
+		'5': {
+			"███",
+			"█  ",
+			"███",
+			"  █",
+			"███",
+		},
+		'6': {
+			"███",
+			"█  ",
+			"███",
+			"█ █",
+			"███",
+		},
+		'7': {
+			"███",
+			"  █",
+			"  █",
+			"  █",
+			"  █",
+		},
+		'8': {
+			"███",
+			"█ █",
+			"███",
+			"█ █",
+			"███",
+		},
+		'9': {
+			"███",
+			"█ █",
+			"███",
+			"  █",
+			"███",
+		},
+		':': {
+			"  ",
+			"██",
+			"  ",
+			"██",
+			"  ",
+		},
+		' ': {
+			"   ",
+			"   ",
+			"   ",
+			"   ",
+			"   ",
+		},
+	}
+	
+	// Convert each character to large text
+	var result []string
+	for row := 0; row < 5; row++ {
+		var line string
+		for _, char := range text {
+			if charLines, exists := font[char]; exists {
+				line += charLines[row] + " "
+			} else {
+				line += "    " // Space for unknown characters
+			}
+		}
+		result = append(result, line)
+	}
+	
+	return result
+}
+
+func flashZero() {
+	width, height := getTerminalSize()
+	centerY := height / 2
+	centerX := width / 2
+	
+	// Create large "0"
+	largeZero := createLargeText("0")
+	textLines := len(largeZero)
+	startY := centerY - textLines/2
+	
+	for i := 0; i < 25; i++ { // 5 seconds at 200ms intervals
+		if i%2 == 0 {
+			// Flash on - red background
+			setColor("bg_red")
+			setColor("white")
+			setColor("bold")
+		} else {
+			// Flash off - normal
+			setColor("reset")
+			setColor("white")
+			setColor("bold")
+		}
 		
-		setColor("reset")
 		clearScreen()
+		
+		// Draw large zero
+		for j, line := range largeZero {
+			moveCursorTo(startY+j, centerX-len(line)/2)
+			fmt.Print(line)
+		}
+		
 		os.Stdout.Sync()
 		time.Sleep(200 * time.Millisecond)
 	}
+	
+	setColor("reset")
 }
 
 func run() error {
@@ -216,7 +334,7 @@ func run() error {
 	
 	timer := NewTimer(duration)
 	
-	// Handle Ctrl+C
+	// Handle signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	
@@ -224,16 +342,39 @@ func run() error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	
+	// Channel for key input
+	keyChan := make(chan byte, 1)
+	
+	// Start key reader goroutine
+	go func() {
+		buf := make([]byte, 1)
+		for {
+			n, err := os.Stdin.Read(buf)
+			if err != nil {
+				return
+			}
+			if n > 0 {
+				keyChan <- buf[0]
+			}
+		}
+	}()
+	
 	for {
 		select {
 		case <-sigChan:
 			timer.Stop()
 			return nil
 			
+		case key := <-keyChan:
+			if key == 13 || key == 10 { // Enter key (CR or LF)
+				timer.Stop()
+				return nil
+			}
+			
 		case <-ticker.C:
 			if timer.IsExpired() {
 				drawTimer(timer)
-				flashScreen()
+				flashZero()
 				fmt.Println("\nTime's up!")
 				return nil
 			}
