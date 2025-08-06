@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"unicode/utf8"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -148,6 +147,7 @@ func run() error {
 	defer termbox.Close()
 	
 	termbox.SetInputMode(termbox.InputEsc)
+	termbox.SetOutputMode(termbox.Output256)
 	
 	timer := NewTimer(duration)
 	
