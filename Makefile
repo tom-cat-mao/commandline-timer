@@ -5,19 +5,19 @@ PREFIX=/usr/local/bin
 
 # Build for current platform
 build:
-	go build -o $(BINARY_NAME) ./main.go
+	go build -o $(BINARY_NAME) ./cmd/timer/main.go
 
 # Build for Linux
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -o $(BINARY_NAME)-linux ./main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BINARY_NAME)-linux ./cmd/timer/main.go
 
 # Build for macOS
 build-macos:
-	GOOS=darwin GOARCH=amd64 go build -o $(BINARY_NAME)-macos ./main.go
+	GOOS=darwin GOARCH=amd64 go build -o $(BINARY_NAME)-macos ./cmd/timer/main.go
 
 # Build for macOS ARM64
 build-macos-arm64:
-	GOOS=darwin GOARCH=arm64 go build -o $(BINARY_NAME)-macos-arm64 ./main.go
+	GOOS=darwin GOARCH=arm64 go build -o $(BINARY_NAME)-macos-arm64 ./cmd/timer/main.go
 
 # Build for all platforms
 build-all: build-linux build-macos build-macos-arm64
