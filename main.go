@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -93,6 +94,7 @@ func setColor(color string) {
 		"bold":     "\033[1m",
 		"bg_red":   "\033[41m",
 		"bg_green": "\033[42m",
+		"dark":     "\033[90m",
 	}
 	if code, exists := colors[color]; exists {
 		fmt.Print(code)
@@ -107,36 +109,34 @@ func drawTimer(timer *Timer) {
 	remaining := timer.Remaining()
 	totalSeconds := int(remaining.Seconds())
 	
+	// Always display in MM:SS format
+	minutes := totalSeconds / 60
+	seconds := totalSeconds % 60
+	timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
+	
 	// Calculate positions
 	centerY := height / 2
 	centerX := width / 2
-	
-	// Format time based on duration
-	var timerText string
-	if timer.duration >= time.Hour {
-		hours := totalSeconds / 3600
-		minutes := (totalSeconds % 3600) / 60
-		seconds := totalSeconds % 60
-		timerText = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-	} else if timer.duration >= time.Minute {
-		minutes := totalSeconds / 60
-		seconds := totalSeconds % 60
-		timerText = fmt.Sprintf("%02d:%02d", minutes, seconds)
-	} else {
-		timerText = fmt.Sprintf("%d", totalSeconds)
-	}
 	
 	// Create large text representation
 	largeText := createLargeText(timerText)
 	textLines := len(largeText)
 	startY := centerY - textLines/2
 	
-	// Draw large timer
-	setColor("white")
+	// Draw large timer with digital clock style
+	setColor("green")
 	setColor("bold")
 	for i, line := range largeText {
 		moveCursorTo(startY+i, centerX-len(line)/2)
 		fmt.Print(line)
+	}
+	
+	// Add subtle shadow effect for depth
+	setColor("reset")
+	for i, line := range largeText {
+		moveCursorTo(startY+i+1, centerX-len(line)/2+1)
+		setColor("dark")
+		fmt.Print(strings.ReplaceAll(line, "█", "░"))
 	}
 	
 	// Draw small instructions at bottom
@@ -151,90 +151,83 @@ func drawTimer(timer *Timer) {
 }
 
 func createLargeText(text string) []string {
-	// Large digit font (3x5 for numbers, 1x5 for colon)
+	// Digital clock style font (7-segment display style)
 	font := map[rune][]string{
 		'0': {
-			"███",
-			"█ █",
-			"███",
-			"█ █",
-			"███",
+			" █████ ",
+			"█     █",
+			"█     █",
+			"█     █",
+			" █████ ",
 		},
 		'1': {
-			"██ ",
-			" █ ",
-			" █ ",
-			" █ ",
-			"███",
+			"    █  ",
+			"    █  ",
+			"    █  ",
+			"    █  ",
+			"    █  ",
 		},
 		'2': {
-			"███",
-			"  █",
-			"███",
-			"█  ",
-			"███",
+			" █████ ",
+			"     █ ",
+			" █████ ",
+			"█      ",
+			" █████ ",
 		},
 		'3': {
-			"███",
-			"  █",
-			"███",
-			"  █",
-			"███",
+			" █████ ",
+			"     █ ",
+			" █████ ",
+			"     █ ",
+			" █████ ",
 		},
 		'4': {
-			"█ █",
-			"█ █",
-			"███",
-			"  █",
-			"  █",
+			"█     █",
+			"█     █",
+			" █████ ",
+			"     █ ",
+			"     █ ",
 		},
 		'5': {
-			"███",
-			"█  ",
-			"███",
-			"  █",
-			"███",
+			" █████ ",
+			"█      ",
+			" █████ ",
+			"     █ ",
+			" █████ ",
 		},
 		'6': {
-			"███",
-			"█  ",
-			"███",
-			"█ █",
-			"███",
+			" █████ ",
+			"█      ",
+			" █████ ",
+			"█     █",
+			" █████ ",
 		},
 		'7': {
-			"███",
-			"  █",
-			"  █",
-			"  █",
-			"  █",
+			" █████ ",
+			"     █ ",
+			"    █  ",
+			"   █   ",
+			"  █    ",
 		},
 		'8': {
-			"███",
-			"█ █",
-			"███",
-			"█ █",
-			"███",
+			" █████ ",
+			"█     █",
+			" █████ ",
+			"█     █",
+			" █████ ",
 		},
 		'9': {
-			"███",
-			"█ █",
-			"███",
-			"  █",
-			"███",
+			" █████ ",
+			"█     █",
+			" █████ ",
+			"     █ ",
+			" █████ ",
 		},
 		':': {
-			"  ",
-			"██",
-			"  ",
-			"██",
-			"  ",
-		},
-		' ': {
 			"   ",
+			" █ ",
 			"   ",
-			"   ",
-			"   ",
+			" █ ",
 			"   ",
 		},
 	}
@@ -247,7 +240,7 @@ func createLargeText(text string) []string {
 			if charLines, exists := font[char]; exists {
 				line += charLines[row] + " "
 			} else {
-				line += "    " // Space for unknown characters
+				line += "       " // Space for unknown characters
 			}
 		}
 		result = append(result, line)
@@ -256,36 +249,49 @@ func createLargeText(text string) []string {
 	return result
 }
 
-func flashZero() {
+func flashZero(keyChan chan byte) {
 	width, height := getTerminalSize()
 	centerY := height / 2
 	centerX := width / 2
 	
-	// Create large "0"
-	largeZero := createLargeText("0")
+	// Create large "00:00"
+	largeZero := createLargeText("00:00")
 	textLines := len(largeZero)
 	startY := centerY - textLines/2
 	
 	for i := 0; i < 25; i++ { // 5 seconds at 200ms intervals
+		select {
+		case key := <-keyChan:
+			if key == 13 || key == 10 { // Enter key (CR or LF)
+				return
+			}
+		default:
+			// Continue with flashing
+		}
+		
 		if i%2 == 0 {
-			// Flash on - red background
-			setColor("bg_red")
-			setColor("white")
+			// Flash on - red color
+			setColor("red")
 			setColor("bold")
 		} else {
-			// Flash off - normal
-			setColor("reset")
-			setColor("white")
+			// Flash off - normal green
+			setColor("green")
 			setColor("bold")
 		}
 		
 		clearScreen()
 		
-		// Draw large zero
+		// Draw large 00:00
 		for j, line := range largeZero {
 			moveCursorTo(startY+j, centerX-len(line)/2)
 			fmt.Print(line)
 		}
+		
+		// Draw instructions
+		moveCursorTo(height-1, 0)
+		setColor("reset")
+		setColor("cyan")
+		fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
 		
 		os.Stdout.Sync()
 		time.Sleep(200 * time.Millisecond)
@@ -374,7 +380,7 @@ func run() error {
 		case <-ticker.C:
 			if timer.IsExpired() {
 				drawTimer(timer)
-				flashZero()
+				flashZero(keyChan)
 				fmt.Println("\nTime's up!")
 				return nil
 			}
