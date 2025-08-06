@@ -90,11 +90,8 @@ make test
 
 ## 📋 Requirements
 
-- **Go**: Version 1.21 or higher
-- **Terminal**: Any modern terminal emulator
-- **OS**: Linux, macOS, or Unix-like system
-- **Memory**: Minimal footprint (< 10MB RAM)
-- **Disk**: ~5MB for compiled binary
+- Go 1.21+
+- Linux, macOS, or Unix-like system
 
 ## 🤝 Contributing
 
