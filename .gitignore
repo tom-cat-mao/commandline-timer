@@ -3,7 +3,7 @@
 *.dll
 *.so
 *.dylib
-timer
+# timer
 timer-*
 # Test binary, built with `go test -c`
 *.test
