@@ -108,10 +108,11 @@ func drawTimer(timer *Timer) {
 	remaining := timer.Remaining()
 	totalSeconds := int(remaining.Seconds())
 	
-	// Always display in MM:SS format
-	minutes := totalSeconds / 60
+	// Always display in HH:MM:SS format
+	hours := totalSeconds / 3600
+	minutes := (totalSeconds % 3600) / 60
 	seconds := totalSeconds % 60
-	timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
+	timerText := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 	
 	// Calculate positions
 	centerY := height / 2
@@ -249,8 +250,8 @@ func flashZero(keyChan chan byte) {
 	centerY := height / 2
 	centerX := width / 2
 	
-	// Create large "00:00"
-	largeZero := createLargeText("00:00")
+	// Create large "00:00:00"
+	largeZero := createLargeText("00:00:00")
 	textLines := len(largeZero)
 	startY := centerY - textLines/2
 	
