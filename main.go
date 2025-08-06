@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-runewidth"
-	"github.com/nsf/termbox-go"
+	"golang.org/x/term"
 )
 
 type Timer struct {
@@ -47,11 +47,12 @@ func (t *Timer) Stop() {
 }
 
 func getTerminalSize() (int, int) {
-	w, h := termbox.Size()
-	if w == 0 || h == 0 {
-		w, h = 80, 24
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		// Fallback to reasonable defaults
+		return 80, 24
 	}
-	return w, h
+	return width, height
 }
 
 func centerText(text string, width int) string {
@@ -63,8 +64,43 @@ func centerText(text string, width int) string {
 	return fmt.Sprintf("%*s%s", padding, "", text)
 }
 
+func moveCursorTo(row, col int) {
+	fmt.Printf("\033[%d;%dH", row, col)
+}
+
+func clearScreen() {
+	fmt.Print("\033[2J\033[H")
+}
+
+func hideCursor() {
+	fmt.Print("\033[?25l")
+}
+
+func showCursor() {
+	fmt.Print("\033[?25h")
+}
+
+func setColor(color string) {
+	colors := map[string]string{
+		"reset":    "\033[0m",
+		"red":      "\033[31m",
+		"green":    "\033[32m",
+		"yellow":   "\033[33m",
+		"blue":     "\033[34m",
+		"magenta":  "\033[35m",
+		"cyan":     "\033[36m",
+		"white":    "\033[37m",
+		"bold":     "\033[1m",
+		"bg_red":   "\033[41m",
+		"bg_green": "\033[42m",
+	}
+	if code, exists := colors[color]; exists {
+		fmt.Print(code)
+	}
+}
+
 func drawTimer(timer *Timer) {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	clearScreen()
 	
 	width, height := getTerminalSize()
 	
@@ -77,43 +113,67 @@ func drawTimer(timer *Timer) {
 	
 	timerText := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 	
-	// Center the timer
-	y := height / 2
-	x := 0
-	
-	// Draw timer text
-	for i, r := range timerText {
-		termbox.SetCell(x+i, y, r, termbox.ColorWhite, termbox.ColorDefault)
-	}
+	// Calculate positions
+	centerY := height / 2
+	titleY := centerY - 2
+	timerY := centerY
+	progressY := centerY + 2
+	instructionsY := height - 2
 	
 	// Draw title
-	title := "COUNTDOWN TIMER"
-	titleX := (width - runewidth.StringWidth(title)) / 2
-	for i, r := range title {
-		termbox.SetCell(titleX+i, y-2, r, termbox.ColorCyan, termbox.ColorDefault)
-	}
+	moveCursorTo(titleY, 0)
+	setColor("cyan")
+	setColor("bold")
+	fmt.Print(centerText("COUNTDOWN TIMER", width))
+	
+	// Draw timer
+	moveCursorTo(timerY, 0)
+	setColor("white")
+	setColor("bold")
+	fmt.Print(centerText(timerText, width))
 	
 	// Draw progress bar
 	progress := 1.0 - float64(remaining.Nanoseconds())/float64(timer.duration.Nanoseconds())
 	barWidth := width / 2
 	barX := (width - barWidth) / 2
 	
+	moveCursorTo(progressY, barX)
+	setColor("green")
+	
 	for i := 0; i < barWidth; i++ {
 		if float64(i) < float64(barWidth)*progress {
-			termbox.SetCell(barX+i, y+2, '=', termbox.ColorGreen, termbox.ColorDefault)
+			fmt.Print("=")
 		} else {
-			termbox.SetCell(barX+i, y+2, '-', termbox.ColorDarkGray, termbox.ColorDefault)
+			setColor("reset")
+			fmt.Print("-")
+			setColor("green")
 		}
 	}
 	
 	// Draw instructions
-	instructions := "Press Ctrl+C to exit"
-	instX := (width - runewidth.StringWidth(instructions)) / 2
-	for i, r := range instructions {
-		termbox.SetCell(instX+i, height-2, r, termbox.ColorYellow, termbox.ColorDefault)
-	}
+	moveCursorTo(instructionsY, 0)
+	setColor("yellow")
+	fmt.Print(centerText("Press Ctrl+C to exit", width))
 	
-	termbox.Flush()
+	// Reset colors and move cursor to bottom
+	setColor("reset")
+	moveCursorTo(height, 0)
+	
+	os.Stdout.Sync()
+}
+
+func flashScreen() {
+	for i := 0; i < 3; i++ {
+		setColor("bg_red")
+		clearScreen()
+		os.Stdout.Sync()
+		time.Sleep(200 * time.Millisecond)
+		
+		setColor("reset")
+		clearScreen()
+		os.Stdout.Sync()
+		time.Sleep(200 * time.Millisecond)
+	}
 }
 
 func run() error {
@@ -140,14 +200,19 @@ func run() error {
 		os.Exit(1)
 	}
 	
-	err = termbox.Init()
+	// Save terminal state
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set terminal to raw mode: %v", err)
 	}
-	defer termbox.Close()
+	defer func() {
+		term.Restore(int(os.Stdin.Fd()), oldState)
+		showCursor()
+		setColor("reset")
+		clearScreen()
+	}()
 	
-	termbox.SetInputMode(termbox.InputEsc)
-	termbox.SetOutputMode(termbox.Output256)
+	hideCursor()
 	
 	timer := NewTimer(duration)
 	
@@ -168,15 +233,7 @@ func run() error {
 		case <-ticker.C:
 			if timer.IsExpired() {
 				drawTimer(timer)
-				// Flash the screen when timer expires
-				for i := 0; i < 5; i++ {
-					termbox.Clear(termbox.ColorRed, termbox.ColorRed)
-					termbox.Flush()
-					time.Sleep(200 * time.Millisecond)
-					termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-					termbox.Flush()
-					time.Sleep(200 * time.Millisecond)
-				}
+				flashScreen()
 				fmt.Println("\nTime's up!")
 				return nil
 			}
