@@ -138,7 +138,7 @@ func drawTimer(timer *Timer) {
 	// Draw small instructions at bottom
 	moveCursorTo(height-1, 0)
 	setColor("reset")
-	fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
+	fmt.Print(centerText("Press Ctrl+Q or Ctrl+C to exit", width))
 	
 	// Reset colors
 	setColor("reset")
@@ -289,7 +289,7 @@ func flashZero(keyChan chan byte) {
 		// Draw instructions
 		moveCursorTo(height-1, 0)
 		setColor("reset")
-		fmt.Print(centerText("Press Enter or Ctrl+C to exit", width))
+		fmt.Print(centerText("Press Enter to stop flashing or Ctrl+C to exit", width))
 		
 		os.Stdout.Sync()
 		time.Sleep(200 * time.Millisecond)
@@ -370,7 +370,7 @@ func run() error {
 			return nil
 			
 		case key := <-keyChan:
-			if key == 13 || key == 10 { // Enter key (CR or LF)
+			if key == 17 { // Ctrl+Q (ASCII code for DC1)
 				timer.Stop()
 				return nil
 			}
