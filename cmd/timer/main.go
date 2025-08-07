@@ -35,7 +35,12 @@ func run() error {
 	term.HideCursor()
 
 	// Initialize timer and display
-	t := timer.NewTimer(config.Duration)
+	var tmr interface{}
+	if config.IsTomato {
+		tmr = timer.NewTomatoTimer()
+	} else {
+		tmr = timer.NewTimer(config.Duration)
+	}
 	display := display.NewDisplay(term)
 
 	// Handle signals
@@ -66,24 +71,56 @@ func run() error {
 	for {
 		select {
 		case <-sigChan:
-			t.Stop()
+			if config.IsTomato {
+				tmr.(*timer.TomatoTimer).Stop()
+			} else {
+				tmr.(*timer.Timer).Stop()
+			}
 			return nil
 
 		case key := <-keyChan:
 			if key == 17 { // Ctrl+Q (ASCII code for DC1)
-				t.Stop()
+				if config.IsTomato {
+					tmr.(*timer.TomatoTimer).Stop()
+				} else {
+					tmr.(*timer.Timer).Stop()
+				}
 				return nil
 			}
 
 		case <-ticker.C:
-			if t.IsExpired() {
-				display.DrawTimer(t)
-				display.FlashZero(keyChan)
-				fmt.Println("\nTime's up!")
-				return nil
+			if config.IsTomato {
+				tomatoTimer := tmr.(*timer.TomatoTimer)
+				
+				if tomatoTimer.IsExpired() {
+					display.DrawTimer(tomatoTimer)
+					
+					if tomatoTimer.State() == "focus" {
+						// Focus time completed, wait for Enter to start break
+						display.FlashTomatoFocusComplete(keyChan)
+						tomatoTimer.StartBreak()
+						fmt.Println("\nFocus time completed! Starting break...")
+					} else if tomatoTimer.State() == "break" {
+						// Break time completed
+						display.FlashTomatoBreakComplete(keyChan)
+						fmt.Println("\nBreak time completed! Pomodoro cycle finished.")
+						return nil
+					}
+				}
+				
+				display.DrawTimer(tomatoTimer)
+			} else {
+				regularTimer := tmr.(*timer.Timer)
+				
+				if regularTimer.IsExpired() {
+					display.DrawTimer(regularTimer)
+					display.FlashZero(keyChan)
+					fmt.Println("\nTime's up!")
+					return nil
+				}
+				
+				display.DrawTimer(regularTimer)
 			}
-
-			display.DrawTimer(t)
 		}
 	}
 }

@@ -14,6 +14,7 @@ A beautifully crafted command line countdown timer that combines minimalist desi
 - ✨ **True Blinking Alert** - Genuine show/hide blinking when timer expires
 - 🎮 **Smart Controls** - Ctrl+Q to exit, Enter to stop blinking
 - 🖥️ **Cross-Platform** - Works on Linux, macOS, and Unix-like systems
+- 🍅 **Pomodoro Timer** - Built-in tomato clock with 25-minute focus and 5-minute break cycles
 
 ## 🚀 Installation
 
@@ -40,12 +41,23 @@ cp timer /usr/local/bin/  # Optional: system-wide installation
 
 ## 📖 Usage
 
+### Regular Timer
 ```bash
 timer 30s          # 30 seconds
 timer 5m           # 5 minutes
 timer 1h30m        # 1 hour 30 minutes
 timer 2h45m30s     # 2 hours, 45 minutes, 30 seconds
 ```
+
+### Pomodoro Timer
+```bash
+timer tomato       # Start 25-minute focus session
+```
+
+The pomodoro timer automatically cycles through:
+- **25 minutes** of focused work time
+- **5 minutes** of break time
+- Press Enter after focus time to start break
 
 ### Duration Format Support
 - **Seconds**: `30s`, `45s`, `60s`
@@ -57,7 +69,7 @@ timer 2h45m30s     # 2 hours, 45 minutes, 30 seconds
 | Key | Action | When Available |
 |-----|--------|----------------|
 | `Ctrl+Q` | Graceful exit | During countdown |
-| `Enter` | Stop blinking | When timer expired |
+| `Enter` | Start break / Stop blinking | When focus time expires / When timer expired |
 | `Ctrl+C` | Immediate exit | Always available |
 
 ## 🛠️ Technical Details
